@@ -32,7 +32,7 @@ Install dependencies:
 
 If you have saved credentials as above you can run:
 
-    python vcmitrejector.py (arguments)
+    python vcmitreject.py (arguments)
 
 Otherwise you will need to set environment variables:
 

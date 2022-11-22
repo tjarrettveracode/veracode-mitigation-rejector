@@ -74,8 +74,9 @@ def get_apps_list(appguid=None,new_since=None):
 def get_all_app_findings(the_apps,new_since=None):
     the_findings=[]
     for app in the_apps:
+        request_params = {}
         if new_since:
-            request_params = {'mitigated_after': new_since}
+            request_params['mitigated_after'] = new_since
 
         these_findings = Findings().get_findings(app=app, annot=True, request_params=request_params)
         status = "Found {} findings for application {}".format(len(these_findings),app)
@@ -137,7 +138,7 @@ def main():
         description='This script identifies and, optionally, rejects self-approved mitigations.')
     parser.add_argument('-a', '--applicationguid', help='Applications guid to check for self-approved mitigations')
     parser.add_argument('-p', '--prompt', action='store_true', help='Prompt for application using partial match search')
-    parser.add_argument('-n', '--new_since', help='Check for new self-approved mitigations after the date-time provided.',default='2022-11-15')
+    parser.add_argument('-n', '--new_since', help='Check for new self-approved mitigations after the date-time provided.')
     parser.add_argument('-r', '--reject', action='store_true', help='Attempt to automatically reject self-approved mitigations')
     args = parser.parse_args()
 
