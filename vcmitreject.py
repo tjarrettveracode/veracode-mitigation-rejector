@@ -78,7 +78,7 @@ def get_all_app_findings(the_apps,new_since=None):
         if new_since:
             request_params['mitigated_after'] = new_since
 
-        these_findings = Findings().get_findings(app=app, annot=True, request_params=request_params)
+        these_findings = Findings().get_findings(app=app, scantype='ALL', annot=True, request_params=request_params)
         status = "Found {} findings for application {}".format(len(these_findings),app)
         print(status)
         log.info(status)
