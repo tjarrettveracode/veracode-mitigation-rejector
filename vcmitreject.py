@@ -133,6 +133,7 @@ def build_report(the_findings):
     table.columns.alignment['App GUID'] = BeautifulTable.ALIGN_LEFT
     table.columns.alignment['Approver'] = BeautifulTable.ALIGN_LEFT
     table.set_style(BeautifulTable.STYLE_COMPACT)
+    print()
     print(table)
     #format findings list
 
