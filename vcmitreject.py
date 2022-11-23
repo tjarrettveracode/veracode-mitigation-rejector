@@ -1,7 +1,6 @@
 import argparse
 import logging
 import datetime
-import json
 from uuid import UUID
 import anticrlf
 from beautifultable import BeautifulTable
