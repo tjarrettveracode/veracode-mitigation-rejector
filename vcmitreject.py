@@ -196,6 +196,7 @@ def main():
 
     # get findings for apps
     all_findings = get_all_app_findings(apps,new_since)
+    print()
     print('{} self-mitigated findings found within the criteria provided.'.format(len(all_findings)))
     if len(all_findings) == 0:
         return
