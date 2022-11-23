@@ -9,6 +9,7 @@ from beautifultable import BeautifulTable
 from veracode_api_py import VeracodeAPI as vapi, Applications, Findings
 
 log = logging.getLogger(__name__)
+app_names = list()
 
 def setup_logger():
     handler = logging.FileHandler('vcmitreject.log', encoding='utf8')
@@ -61,10 +62,10 @@ def prompt_for_app(prompt_text):
 def get_apps_list(appguid=None,new_since=None):
     the_apps=[]
     
+    # only look at new_since if appguid not specified
     if appguid:
         the_apps.append(appguid)
-
-    if new_since:
+    elif new_since:
         matching_apps = Applications().get_all(policy_check_after=new_since)
         matching_app_guids = [ma['guid'] for ma in matching_apps]
         the_apps.extend(matching_app_guids)
@@ -79,12 +80,9 @@ def get_all_app_findings(the_apps,new_since=None):
             request_params['mitigated_after'] = new_since
 
         these_findings = Findings().get_findings(app=app, scantype='ALL', annot=True, request_params=request_params)
-        status = "Found {} findings for application {}".format(len(these_findings),app)
-        print(status)
-        log.info(status)
 
         these_mitigated_findings = get_self_mitigated_findings(these_findings)
-        status = "Found {} mitigated findings for application {}".format(len(these_mitigated_findings),app)
+        status = "Found {} mitigated out of {} total findings for application {}".format(len(these_mitigated_findings),len(these_findings),app)
         print(status)
         log.info(status)
 
@@ -95,12 +93,13 @@ def get_all_app_findings(the_apps,new_since=None):
     return the_findings
 
 def find_approver(the_finding):
-    return next(annot['user_name'] for annot in the_finding['annotations'] if annot['action'] == 'APPROVED')
+    return next((annot['user_name'] for annot in the_finding['annotations'] if annot['action'] == 'APPROVED'),"")
 
 def find_proposer(the_finding):
-    return next(annot['user_name'] for annot in the_finding['annotations'] if annot['action'] in ('APPDESIGN','FP','NETENV','OSENV','LIBRARY','ACCEPTRISK')) 
+    return next((annot['user_name'] for annot in the_finding['annotations'] if annot['action'] in ('APPDESIGN','FP','NETENV','OSENV','LIBRARY','ACCEPTRISK')),"") 
 
 def get_self_mitigated_findings(all_findings):
+    # start by getting all mitigated findings
     mitigated_findings = list(filter(lambda finding: finding['finding_status']['resolution_status'] == 'APPROVED', all_findings))
 
     self_mitigated_findings=[]
@@ -108,17 +107,32 @@ def get_self_mitigated_findings(all_findings):
     for each_finding in mitigated_findings: # ideally we want to do this with list comprehension, but looping through as a first pass
         approver = find_approver(each_finding)
         proposer = find_proposer(each_finding)
-        if proposer == approver:
+        if proposer == approver and approver != "":
             self_mitigated_findings.append(each_finding)
 
     return self_mitigated_findings
 
-def build_report(the_findings):
-    table = BeautifulTable()
-    for each_finding in the_findings:
-        table.rows.append([each_finding['issue_id'], each_finding['context_guid'],each_finding['scan_type'],each_finding['finding_details']['cwe']['id'],find_approver(each_finding)])
+def get_app_name(app_guid):
+    app_name = next((app['name'] for app in app_names if app['guid'] == app_guid),"")
+    if app_name == "":
+        the_app = Applications().get(guid=app_guid)
+        app_name = the_app['profile']['name']
+        app_names.append({'guid':app_guid,'name':app_name})
+    return app_name
 
-    table.columns.header = ['Flaw ID','App GUID','Scan Type','CWE ID','Approver']
+def build_report(the_findings):
+    table = BeautifulTable(maxwidth=100)
+    for each_finding in the_findings:
+        this_guid = each_finding['context_guid']
+        app_name = get_app_name(app_guid=this_guid)
+        table.rows.append([each_finding['issue_id'],app_name,this_guid,each_finding['scan_type'],each_finding['finding_details']['cwe']['id'],find_approver(each_finding)])
+
+    table.columns.header = ['Flaw ID','App Name','App GUID','Scan Type','CWE ID','Approver']
+    table.columns.header.alignment = BeautifulTable.ALIGN_CENTER
+    table.columns.alignment['App Name'] = BeautifulTable.ALIGN_LEFT
+    table.columns.alignment['App GUID'] = BeautifulTable.ALIGN_LEFT
+    table.columns.alignment['Approver'] = BeautifulTable.ALIGN_LEFT
+    table.set_style(BeautifulTable.STYLE_COMPACT)
     print(table)
     #format findings list
 
@@ -136,13 +150,13 @@ def reject_self_mitigated_findings(the_findings):
 def main():
     parser = argparse.ArgumentParser(
         description='This script identifies and, optionally, rejects self-approved mitigations.')
-    parser.add_argument('-a', '--applicationguid', help='Applications guid to check for self-approved mitigations')
-    parser.add_argument('-p', '--prompt', action='store_true', help='Prompt for application using partial match search')
+    parser.add_argument('-a', '--app_id', help='Applications guid to check for self-approved mitigations.')
+    parser.add_argument('-p', '--prompt', action='store_true', help='Prompt for application using partial match search.')
     parser.add_argument('-n', '--new_since', help='Check for new self-approved mitigations after the date-time provided.')
-    parser.add_argument('-r', '--reject', action='store_true', help='Attempt to automatically reject self-approved mitigations')
+    parser.add_argument('-r', '--reject', action='store_true', help='Attempt to automatically reject self-approved mitigations.')
     args = parser.parse_args()
 
-    appguid = args.applicationguid
+    appguid = args.app_id
     new_since = args.new_since
     reject = args.reject
     prompt = args.prompt
@@ -153,9 +167,15 @@ def main():
     creds_expire_days_warning()
 
     # validate inputs
-    if new_since and not(is_valid_datetime(new_since)):
-        print('{} is an invalid datetime value. Please provide the date in YYYY-MM-DDTHH:MM:SS.OOOZ format'.format(new_since))
-        return
+    if not(new_since) and not(prompt) and not (appguid):
+        print('Searching across all applications in your account. This may take some time…')
+
+    if new_since:
+        if not(is_valid_datetime(new_since)):
+            print('{} is an invalid datetime value. Please provide the date in YYYY-MM-DDTHH:MM:SS.OOOZ format'.format(new_since))
+            return
+    else:
+        new_since = '2006-04-01' #fetch data for all time
 
     if prompt: 
         appguid = prompt_for_app('Enter the application name for which to reject self-approved mitigations: ')
@@ -177,6 +197,8 @@ def main():
     # get findings for apps
     all_findings = get_all_app_findings(apps,new_since)
     print('{} self-mitigated findings found within the criteria provided.'.format(len(all_findings)))
+    if len(all_findings) == 0:
+        return
 
     # construct report
     build_report(all_findings)
