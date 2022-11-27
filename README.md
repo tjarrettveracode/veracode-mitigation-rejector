@@ -46,6 +46,7 @@ Arguments supported include:
 * `-p`, `--prompt` (opt): Prompt to check a specific application by name for self-approved mitigations
 * `-n`, `--new-since` (opt): Checks for new self-approved mitigations that were approved since the date/time provided (in `YYYY-MM-DDTHH:MM:SS.OOOZ` format). If not specified, the script will check for self-approved mitigations over all time. This may run for a while!
 * `-r`, `--reject` (opt): If specified, will attempt to reject any self-approved mitigations found
+* `-c`, `--csv` (opt): If specified, will write the output to a CSV file named `vcmitreject-<datetime>.csv`.
 
 ## Notes
 
