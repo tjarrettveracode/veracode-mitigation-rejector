@@ -58,7 +58,7 @@ def prompt_for_app(prompt_text):
         appguid = app_candidates[0].get('guid')
     return appguid    
 
-def get_apps_list(appguid=None,new_since=None):
+def get_apps_list(appguid: UUID=None,new_since=None):
     the_apps=[]
     
     # only look at new_since if appguid not specified
@@ -75,8 +75,6 @@ def get_all_app_findings(the_apps,new_since=None):
     the_findings=[]
     for app in the_apps:
         request_params = {}
-        if new_since:
-            request_params['mitigated_after'] = new_since
 
         these_findings = Findings().get_findings(app=app, scantype='ALL', annot=True, request_params=request_params)
 
@@ -111,7 +109,7 @@ def get_self_mitigated_findings(all_findings):
 
     return self_mitigated_findings
 
-def get_app_name(app_guid):
+def get_app_name(app_guid: UUID):
     app_name = next((app['name'] for app in app_names if app['guid'] == app_guid),"")
     if app_name == "":
         the_app = Applications().get(guid=app_guid)
@@ -119,7 +117,7 @@ def get_app_name(app_guid):
         app_names.append({'guid':app_guid,'name':app_name})
     return app_name
 
-def build_report(the_findings):
+def build_report(the_findings, csv=False):
     table = BeautifulTable(maxwidth=100)
     for each_finding in the_findings:
         this_guid = each_finding['context_guid']
@@ -135,6 +133,12 @@ def build_report(the_findings):
     print()
     print(table)
     #format findings list
+
+    if csv:
+        the_time = datetime.datetime.now()
+        filename = 'vcmitreject-{}.csv'.format(the_time)
+
+        table.to_csv(file_name = filename)
 
 
 def reject_self_mitigated_findings(the_findings):
@@ -154,12 +158,14 @@ def main():
     parser.add_argument('-p', '--prompt', action='store_true', help='Prompt for application using partial match search.')
     parser.add_argument('-n', '--new_since', help='Check for new self-approved mitigations after the date-time provided.')
     parser.add_argument('-r', '--reject', action='store_true', help='Attempt to automatically reject self-approved mitigations.')
+    parser.add_argument('-c', '--csv', action='store_true', help='Set to save the output as a CSV file.')
     args = parser.parse_args()
 
     appguid = args.app_id
     new_since = args.new_since
     reject = args.reject
     prompt = args.prompt
+    csv = args.csv
 
     setup_logger()
 
@@ -202,7 +208,7 @@ def main():
         return
 
     # construct report
-    build_report(all_findings)
+    build_report(all_findings, csv)
 
     # reject self-approved mitigations
     if reject:
