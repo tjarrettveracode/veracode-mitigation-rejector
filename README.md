@@ -52,3 +52,4 @@ Arguments supported include:
 
 1. The script ignores findings that were automatically approved by Custom Cleansers.
 1. To find all self-approved mitigations in your account, you can run the script with no arguments. Please note that this may run for a long time depending on the number of applications in your environment. If running across all applications, it is recommended to provide a value for `--new-since`.
+1. For applications that have both static and dynamic scans, you may see some attempts to reject mitigations fail in a 404. This is caused by a known issue and is being worked by Veracode. In the meantime, you may need to reject these mitigations manually.
