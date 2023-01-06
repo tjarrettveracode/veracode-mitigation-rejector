@@ -7,6 +7,7 @@ from beautifultable import BeautifulTable
 
 from veracode_api_py import VeracodeAPI as vapi, Applications, Findings
 
+debugmode = False
 log = logging.getLogger(__name__)
 app_names = list()
 
@@ -15,7 +16,10 @@ def setup_logger():
     handler.setFormatter(anticrlf.LogFormatter('%(asctime)s - %(levelname)s - %(funcName)s - %(message)s'))
     logger = logging.getLogger(__name__)
     logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
+    if debugmode:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
 def creds_expire_days_warning():
     creds = vapi().get_creds()
@@ -74,7 +78,12 @@ def get_apps_list(appguid: UUID=None,new_since=None):
 def get_all_app_findings(the_apps,new_since=None):
     the_findings=[]
     for app in the_apps:
-        request_params = {}
+        if debugmode:
+            status = "Checking findings for app {}".format(app)
+            print(status)
+            log.debug(status)
+
+        request_params = { 'violates_policy': True } # only policy violating flaws matter for mitigations
 
         these_findings = Findings().get_findings(app=app, scantype='ALL', annot=True, request_params=request_params)
 
@@ -159,6 +168,7 @@ def main():
     parser.add_argument('-n', '--new_since', help='Check for new self-approved mitigations after the date-time provided.')
     parser.add_argument('-r', '--reject', action='store_true', help='Attempt to automatically reject self-approved mitigations.')
     parser.add_argument('-c', '--csv', action='store_true', help='Set to save the output as a CSV file.')
+    parser.add_argument('-d', '--debug', action='store_true', help='Set to print additional debug information to console and log.')
     args = parser.parse_args()
 
     appguid = args.app_id
@@ -166,6 +176,8 @@ def main():
     reject = args.reject
     prompt = args.prompt
     csv = args.csv
+    global debugmode
+    debugmode = args.debug
 
     setup_logger()
 

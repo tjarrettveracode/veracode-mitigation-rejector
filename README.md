@@ -1,6 +1,6 @@
 # Veracode Mitigation Rejector
 
-Identifies and, optionally, rejects self-approved mitigations (mitigations that were proposed and approved by the same Veracode user).
+Identifies and, optionally, rejects self-approved mitigations (mitigations that were proposed and approved by the same Veracode user) on findings that violate policy.
 
 ## Prerequisites
 
@@ -47,9 +47,11 @@ Arguments supported include:
 * `-n`, `--new-since` (opt): Checks for new self-approved mitigations that were approved since the date/time provided (in `YYYY-MM-DDTHH:MM:SS.OOOZ` format). If not specified, the script will check for self-approved mitigations over all time. This may run for a while!
 * `-r`, `--reject` (opt): If specified, will attempt to reject any self-approved mitigations found
 * `-c`, `--csv` (opt): If specified, will write the output to a CSV file named `vcmitreject-<datetime>.csv`.
+* `-d`, `--debug` (opt): If specified, prints additional debugging statements to console and log to help troubleshoot long runs of the tool.
 
 ## Notes
 
 1. The script ignores findings that were automatically approved by Custom Cleansers.
+1. For performance and practical reasons, the script only evaluates findings that violate policy.
 1. To find all self-approved mitigations in your account, you can run the script with no arguments. Please note that this may run for a long time depending on the number of applications in your environment. If running across all applications, it is recommended to provide a value for `--new-since`.
 1. For applications that have both static and dynamic scans, you may see some attempts to reject mitigations fail in a 404. This is caused by a known issue and is being worked by Veracode. In the meantime, you may need to reject these mitigations manually.
