@@ -5,6 +5,7 @@ play.py
 *.xml
 *.log
 *.pdf
+*.csv
 veracode-plugin.conf
 
 # https://github.com/github/gitignore/blob/master/Python.gitignore
