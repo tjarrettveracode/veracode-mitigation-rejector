@@ -64,7 +64,7 @@ def prompt_for_app(prompt_text):
 
 def get_apps_list(appguid: UUID=None,new_since=None):
     the_apps=[]
-    
+
     # only look at new_since if appguid not specified
     if appguid:
         the_apps.append(appguid)
@@ -75,15 +75,15 @@ def get_apps_list(appguid: UUID=None,new_since=None):
 
     return the_apps
 
-def get_all_app_findings(the_apps,new_since=None):
+def get_all_app_findings(the_apps):
     the_findings=[]
-    for app in the_apps:
+    for count, app in enumerate(the_apps):
         if debugmode:
-            status = "Checking findings for app {}".format(app)
+            status = "{} - Checking findings for app {}".format(count, app)
             print(status)
             log.debug(status)
 
-        request_params = { 'violates_policy': True } # only policy violating flaws matter for mitigations
+        request_params = { 'violates_policy': True, 'size': 100 } # only policy violating flaws matter for mitigations; increase page size for perf
 
         these_findings = Findings().get_findings(app=app, scantype='ALL', annot=True, request_params=request_params)
 
@@ -213,7 +213,7 @@ def main():
     print('Checking {} applications for self mitigated findings.'.format(len(apps)))
 
     # get findings for apps
-    all_findings = get_all_app_findings(apps,new_since)
+    all_findings = get_all_app_findings(apps)
     print()
     print('{} self-mitigated findings found within the criteria provided.'.format(len(all_findings)))
     if len(all_findings) == 0:
