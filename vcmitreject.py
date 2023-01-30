@@ -216,8 +216,6 @@ def main():
     all_findings = get_all_app_findings(apps)
     print()
     print('{} self-mitigated findings found within the criteria provided.'.format(len(all_findings)))
-    if len(all_findings) == 0:
-        return
 
     # construct report
     build_report(all_findings, csv)
