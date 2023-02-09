@@ -83,7 +83,7 @@ def get_all_app_findings(the_apps):
             print(status)
             log.debug(status)
 
-        request_params = { 'violates_policy': True, 'size': 100 } # only policy violating flaws matter for mitigations; increase page size for perf
+        request_params = { 'mitigated_after': '2006-04-01', 'violates_policy': True, 'size': 100 } # only mitigated flaws; only policy violating flaws matter for mitigations; increase page size for perf
 
         these_findings = Findings().get_findings(app=app, scantype='ALL', annot=True, request_params=request_params)
 
